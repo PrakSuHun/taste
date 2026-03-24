@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>이맛저맛 | 현장 출석체크</title>
+
+<!-- 폰트 및 라이브러리 -->
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Pretendard', 'sans-serif'] },
+      colors: {
+        brand: {
+          // 연주황색 테마
+          light: '#FFF5F0',
+          DEFAULT: '#FF8A4C', // 메인 연주황
+          dark: '#E66A22',
+          gradient: '#FFB085', // 그라데이션용 부드러운 주황
+        }
+      }
+    }
+  }
+}
+</script>
+<style>
+  body { 
+    background-color: #FFFDFB; 
+    /* 연주황색 은은한 그라데이션 배경 */
+    background-image: radial-gradient(circle at top left, rgba(255, 138, 76, 0.08), transparent 50%), radial-gradient(circle at bottom right, rgba(255, 176, 133, 0.08), transparent 50%);
+    background-attachment: fixed;
+    color: #111827; 
+    -webkit-font-smoothing: antialiased; 
+    word-break: keep-all; 
+    letter-spacing: -0.02em; 
+  }
+  .glass { 
+    background: rgba(255, 255, 255, 0.85); 
+    backdrop-filter: blur(16px); 
+    border: 1px solid rgba(255, 255, 255, 1); 
+    box-shadow: 0 10px 25px -5px rgba(255, 138, 76, 0.08), 0 8px 10px -6px rgba(255, 138, 76, 0.04);
+  }
+  .input-field { 
+    width: 100%; 
+    background: #FFFDFB; 
+    border: 1px solid #FDBA74; 
+    border-radius: 0.75rem; 
+    padding: 0.875rem 1rem; 
+    color: #1F2937; 
+    transition: all 0.3s; 
+  }
+  .input-field:focus { 
+    outline: none; 
+    border-color: #FF8A4C; 
+    background: #FFFFFF; 
+    box-shadow: 0 0 0 3px rgba(255, 138, 76, 0.2); 
+  }
+  .input-field::placeholder { color: #FDBA74; }
+  .loader { border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 3px solid #fff; width: 24px; height: 24px; animation: spin 1s linear infinite; display: none; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
+</head>
+<body class="selection:bg-brand selection:text-white pb-20 h-screen flex flex-col">
+
+<!-- 네비게이션 바 -->
+<nav class="w-full glass border-b border-orange-100 sticky top-0 z-50">
+  <div class="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
+    <a href="#" class="font-black text-2xl flex items-center gap-2">
+      <i class="fa-solid fa-utensils text-brand text-xl"></i>
+      <span class="text-brand tracking-tight">이맛저맛</span>
+    </a>
+  </div>
+</nav>
+
+<!-- 메인 콘텐츠 -->
+<main class="max-w-xl mx-auto px-6 pt-12 flex-1 flex flex-col justify-center w-full mt-[-64px]">
+  
+  <div class="text-center mb-10">
+    <div class="inline-block px-3 py-1 mb-3 rounded-full bg-orange-50 border border-orange-200 text-brand text-sm font-bold tracking-wide shadow-sm">
+      <i class="fa-solid fa-ticket mr-1"></i> 현장 입장
+    </div>
+    <h1 class="text-3xl md:text-4xl font-black mb-4 text-gray-900">출석 체크</h1>
+    <p class="text-gray-500 text-sm md:text-base">빠른 입장을 위해 신청하신 이름을 입력해 주세요.</p>
+  </div>
+
+  <div class="glass p-6 md:p-8 rounded-3xl space-y-6 border border-orange-50">
+    <div>
+      <label class="block text-sm font-bold text-gray-700 mb-2" for="userName">이름 <span class="text-brand">*</span></label>
+      <input type="text" id="userName" placeholder="예: 홍길동" class="input-field text-lg text-center font-medium" onkeypress="if(event.key === 'Enter') checkAttendance()">
+    </div>
+  </div>
+
+  <button type="button" onclick="checkAttendance()" id="submitBtn" class="w-full py-5 bg-gradient-to-r from-brand to-brand-gradient text-white font-black text-xl rounded-2xl hover:shadow-[0_10px_30px_rgba(255,138,76,0.4)] transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2 mt-6 border border-brand/50">
+    <span id="btnText">입장 확인하기</span>
+    <div id="btnLoader" class="loader" style="width:20px;height:20px;border-width:2.5px;"></div>
+  </button>
+  
+</main>
+
+<!-- 결과 모달 (팝업창) -->
+<div id="resultModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-gray-900/70 backdrop-blur-sm px-4 opacity-0 transition-opacity duration-300">
+  <div class="bg-white p-8 rounded-3xl max-w-sm w-full text-center shadow-2xl transform transition-all scale-95 duration-300 border border-orange-100 relative overflow-hidden" id="modalContent">
+    
+    <!-- 모달 상단 포인트 라인 -->
+    <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-brand to-brand-gradient" id="modalTopLine"></div>
+
+    <!-- 아이콘 영역 -->
+    <div id="modalIconBox" class="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-5 border border-orange-100">
+      <i id="modalIcon" class="fa-solid fa-face-smile text-3xl text-brand"></i>
+    </div>
+    
+    <h3 id="modalTitle" class="text-2xl font-black text-gray-900 mb-2">환영합니다!</h3>
+    <p id="modalMessage" class="text-gray-600 text-sm mb-6 leading-relaxed">
+      테이블에 이름표가 있으니 이름표대로 앉아주세요.
+    </p>
+    
+    <!-- 팀 및 음료 안내 박스 -->
+    <div id="infoBox" class="grid grid-cols-2 gap-3 mb-6 hidden">
+      <div class="bg-orange-50 rounded-xl p-4 border border-orange-100 flex flex-col items-center justify-center">
+        <p class="text-sm font-bold text-brand mb-1">🎯 배정된 팀</p>
+        <p class="text-2xl font-black text-gray-900"><span id="teamNumberDisplay"></span>팀</p>
+      </div>
+      <div class="bg-orange-50 rounded-xl p-4 border border-orange-100 flex flex-col items-center justify-center text-center">
+        <p class="text-sm font-bold text-brand mb-1">🥤 선택한 음료</p>
+        <p class="text-lg font-black text-gray-900 break-keep"><span id="beverageDisplay"></span></p>
+      </div>
+    </div>
+    
+    <button type="button" onclick="closeModal()" id="closeModalBtn" class="w-full py-4 bg-gray-900 text-white font-black text-lg rounded-xl hover:bg-black transition-all flex items-center justify-center gap-2 shadow-lg mb-2">
+      확인 (창 닫기)
+    </button>
+  </div>
+</div>
+
+<script>
+  // ✅ 출석체크 API 통신 함수
+  async function checkAttendance() {
+    const nameInput = document.getElementById('userName').value.trim();
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const btnLoader = document.getElementById('btnLoader');
+
+    if (!nameInput) {
+        alert("이름을 입력해주세요!");
+        document.getElementById('userName').focus();
+        return;
+    }
+
+    // 로딩 UI 시작
+    submitBtn.disabled = true;
+    submitBtn.classList.add('opacity-70', 'cursor-not-allowed');
+    btnText.innerText = '명단 확인 중...';
+    btnLoader.style.display = 'block';
+
+    try {
+        // 🚀 Vercel에 배포된 노션 연동 API 라우트로 POST 요청
+        const response = await fetch('/api/check-attendance', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: nameInput })
+        });
+
+        const data = await response.json();
+
+        // 성공 여부에 따른 모달 창 띄우기
+        if (response.ok && data.success) {
+            showModal(true, nameInput, data.team, data.beverage);
+        } else {
+            console.error('서버 응답 에러:', data.message);
+            showModal(false, nameInput, null, null);
+        }
+    } catch (error) {
+        // [테스트/프리뷰 환경을 위한 로직]
+        // 화면 디자인 확인을 위해 '테스트'라고 입력하면 무조건 성공하도록 처리했습니다.
+        if(nameInput === '테스트') {
+            showModal(true, nameInput, "1", "아이스 아메리카노");
+        } else {
+            console.error('API 통신 에러:', error);
+            showModal(false, nameInput, null, null);
+        }
+    } finally {
+        // 로딩 UI 종료 및 초기화
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+        btnText.innerText = '입장 확인하기';
+        btnLoader.style.display = 'none';
+        document.getElementById('userName').value = '';
+    }
+  }
+
+  // 모달(팝업) 디자인 변경 함수
+  function showModal(isSuccess, name, team, beverage) {
+    const modal = document.getElementById('resultModal');
+    const content = document.getElementById('modalContent');
+    const iconBox = document.getElementById('modalIconBox');
+    const icon = document.getElementById('modalIcon');
+    const title = document.getElementById('modalTitle');
+    const message = document.getElementById('modalMessage');
+    const infoBox = document.getElementById('infoBox');
+    const teamDisplay = document.getElementById('teamNumberDisplay');
+    const beverageDisplay = document.getElementById('beverageDisplay');
+    const topLine = document.getElementById('modalTopLine');
+    const closeBtn = document.getElementById('closeModalBtn');
+
+    if (isSuccess) {
+        // 성공 스타일 (연주황색 테마)
+        topLine.className = "absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-brand to-brand-gradient";
+        iconBox.className = "w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-5 border border-orange-100";
+        icon.className = "fa-solid fa-face-smile text-3xl text-brand";
+        title.innerText = `${name}님 환영합니다!`;
+        message.innerText = "테이블에 이름표가 있으니 이름표대로 앉아주세요.";
+        infoBox.classList.remove('hidden');
+        teamDisplay.innerText = team;
+        beverageDisplay.innerText = beverage || '미선택';
+        closeBtn.className = "w-full py-4 bg-gray-900 text-white font-black text-lg rounded-xl hover:bg-black transition-all flex items-center justify-center gap-2 shadow-lg mb-2";
+    } else {
+        // 에러/실패 스타일 (빨간색 경고)
+        topLine.className = "absolute top-0 left-0 w-full h-2 bg-red-500";
+        iconBox.className = "w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5 border border-red-100";
+        icon.className = "fa-solid fa-circle-exclamation text-3xl text-red-500";
+        title.innerText = "확인 불가";
+        message.innerHTML = `<span class="font-bold text-red-500">'${name}'</span> 님의 사전 신청 내역을 찾을 수 없습니다.<br>오타가 없는지 확인하시거나 현장 스태프에게 문의해 주세요.`;
+        infoBox.classList.add('hidden');
+        closeBtn.className = "w-full py-4 bg-gray-100 text-gray-700 font-black text-lg rounded-xl hover:bg-gray-200 transition-all flex items-center justify-center gap-2 mb-2";
+    }
+
+    // 모달 나타나기 애니메이션
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    setTimeout(() => {
+      modal.classList.remove('opacity-0');
+      modal.classList.add('opacity-100');
+      content.classList.remove('scale-95');
+      content.classList.add('scale-100');
+    }, 10);
+  }
+
+  // 모달 닫기
+  function closeModal() {
+    const modal = document.getElementById('resultModal');
+    const content = document.getElementById('modalContent');
+    
+    modal.classList.remove('opacity-100');
+    modal.classList.add('opacity-0');
+    content.classList.remove('scale-100');
+    content.classList.add('scale-95');
+    
+    setTimeout(() => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      document.getElementById('userName').focus();
+    }, 300);
+  }
+</script>
+</body>
+</html>
