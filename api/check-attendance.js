@@ -45,7 +45,7 @@ export default async function handler(req, res) {
           // ⭐ 동명이인이 있는 경우: 출석 처리하지 않고 학과 정보만 추출해서 프론트로 반환
           const candidates = response.results.map(page => {
             let dept = "소속 불명";
-            // 💡 주의: 노션 데이터베이스의 실제 열 이름에 맞게 '학과'를 수정하세요. (예: '전공', '소속' 등)
+            // 💡 주의: 노션 데이터베이스의 실제 열 이름에 맞게 '학과'를 수정하세요.
             const deptProp = page.properties['학과']; 
             if (deptProp) {
               if (deptProp.type === 'rich_text' && deptProp.rich_text.length > 0) {
@@ -80,10 +80,14 @@ export default async function handler(req, res) {
          finalName = nameProp.title[0].plain_text;
       }
 
-      // 팀 번호 추출
+      // ⭐ 팀 번호 추출 로직 수정 (Select 유형 대응)
       let teamNumber = "미배정";
       const teamProp = targetPage.properties['팀번호'];
-      if (teamProp?.type === 'rich_text' && teamProp.rich_text.length > 0) {
+      if (teamProp?.type === 'select' && teamProp.select) {
+        // 선택 유형(select)일 경우
+        teamNumber = teamProp.select.name.replace('팀', '').trim();
+      } else if (teamProp?.type === 'rich_text' && teamProp.rich_text.length > 0) {
+        // 혹시 텍스트(rich_text)로 남아있는 경우를 대비한 안전 장치
         teamNumber = teamProp.rich_text[0].plain_text.replace('팀', '').trim(); 
       } 
 
