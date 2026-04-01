@@ -17,9 +17,9 @@ tailwind.config = {
       colors: {
         brand: {
           light: '#FFF5E1',
-          DEFAULT: '#FF6B00', // 쨍하고 강렬한 오렌지
-          yellow: '#FFD600',  // 포인트 옐로우
-          dark: '#1A1A1A',    // 굵은 선을 위한 찐블랙
+          DEFAULT: '#FF6B00',
+          yellow: '#FFD600',  
+          dark: '#1A1A1A',    
         }
       },
       boxShadow: {
@@ -33,8 +33,7 @@ tailwind.config = {
 </script>
 <style>
   body { 
-    background-color: #FDF9F1; /* 따뜻한 아이보리 계열 배경 */
-    /* 도트 패턴 배경 추가 */
+    background-color: #FDF9F1; 
     background-image: radial-gradient(#FF6B00 1px, transparent 1px);
     background-size: 24px 24px;
     background-attachment: fixed;
@@ -44,30 +43,23 @@ tailwind.config = {
     letter-spacing: -0.02em; 
   }
   
-  /* 커스텀 스크롤바 등 텍스트 선택 색상 */
   ::selection { background-color: #1A1A1A; color: #FFD600; }
 
-  /* 네오브루탈리즘 입력창 애니메이션 */
-  .input-brutal {
-    transition: all 0.15s ease-in-out;
-  }
+  .input-brutal { transition: all 0.15s ease-in-out; }
   .input-brutal:focus {
     transform: translate(3px, 3px);
     box-shadow: 2px 2px 0px 0px rgba(26,26,26,1);
     outline: none;
   }
 
-  /* 네오브루탈리즘 버튼 애니메이션 */
-  .btn-brutal {
-    transition: all 0.1s ease-in-out;
-  }
+  .btn-brutal { transition: all 0.1s ease-in-out; }
   .btn-brutal:active, .btn-brutal.loading {
     transform: translate(4px, 4px);
     box-shadow: 0px 0px 0px 0px rgba(26,26,26,1) !important;
   }
 
   .loader { 
-    border: 3px solid rgba(26,26,26,0.3); 
+    border: 3px solid rgba(26,26,26,0.2); 
     border-radius: 50%; 
     border-top: 3px solid #1A1A1A; 
     width: 24px; 
@@ -76,6 +68,11 @@ tailwind.config = {
     display: none; 
   }
   @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+  /* 커스텀 스크롤바 */
+  .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: #1A1A1A; border-radius: 4px; }
 </style>
 </head>
 <body class="pb-20 h-screen flex flex-col">
@@ -92,11 +89,7 @@ tailwind.config = {
 
 <!-- 메인 콘텐츠 -->
 <main class="max-w-xl mx-auto px-6 py-10 flex-1 flex flex-col justify-center w-full">
-  
-  <!-- 메인 박스 -->
   <div class="bg-white border-4 border-brand-dark rounded-2xl p-6 md:p-8 shadow-brutal relative mr-2 md:mr-0 mt-4 md:mt-0">
-    
-    <!-- 장식용 뱃지 -->
     <div class="absolute -top-5 -right-3 md:-top-5 md:-right-5 bg-brand-yellow border-4 border-brand-dark rounded-full w-16 h-16 md:w-20 md:h-20 flex items-center justify-center shadow-brutal transform rotate-12 z-10">
       <span class="font-black text-brand-dark text-xs md:text-lg leading-tight text-center">TICKET<br>🎟️</span>
     </div>
@@ -121,20 +114,16 @@ tailwind.config = {
       <div id="btnLoader" class="loader"></div>
     </button>
   </div>
-  
 </main>
 
 <!-- 결과 모달 (팝업창) -->
 <div id="resultModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-brand-dark/80 backdrop-blur-sm px-4 opacity-0 transition-opacity duration-300">
-  <!-- 모달 컨텐츠 컨테이너 -->
-  <div class="bg-white border-4 border-brand-dark rounded-2xl p-6 md:p-8 max-w-sm w-full shadow-[12px_12px_0_0_rgba(255,107,0,1)] transform transition-all scale-95 duration-300 relative" id="modalContent">
+  <div class="bg-white border-4 border-brand-dark rounded-2xl p-6 md:p-8 max-w-sm w-full transform transition-all scale-95 duration-300 relative" id="modalContent">
     
-    <!-- 닫기 버튼 (X 아이콘) -->
     <button onclick="closeModal()" class="absolute -top-4 -right-4 bg-white border-4 border-brand-dark rounded-full w-12 h-12 flex items-center justify-center shadow-brutal hover:bg-gray-100 btn-brutal z-10">
       <i class="fa-solid fa-xmark text-2xl font-black text-brand-dark"></i>
     </button>
 
-    <!-- 아이콘 영역 (JS에서 동적 변경) -->
     <div id="modalIconBox" class="w-20 h-20 bg-brand-yellow border-4 border-brand-dark rounded-full flex items-center justify-center mb-6 shadow-brutal transform -rotate-6">
       <i id="modalIcon" class="fa-solid fa-face-smile text-4xl text-brand-dark"></i>
     </div>
@@ -144,21 +133,26 @@ tailwind.config = {
       테이블에 이름표가 있으니 이름표대로 앉아주세요.
     </p>
     
-    <!-- 팀 및 음료 안내 박스 -->
+    <!-- 1. 팀 및 음료 안내 박스 (최종 성공 시 표시) -->
     <div id="infoBox" class="flex flex-col gap-4 mb-2 hidden">
-      <!-- 팀 박스 -->
       <div class="bg-brand border-4 border-brand-dark rounded-xl p-4 flex items-center justify-between shadow-brutal-sm">
         <span class="font-black text-brand-dark text-lg">🎯 배정 팀</span>
         <span class="text-3xl font-black text-white px-3 py-1 bg-brand-dark rounded-lg transform rotate-2"><span id="teamNumberDisplay"></span>팀</span>
       </div>
-      <!-- 음료 박스 -->
       <div class="bg-brand-yellow border-4 border-brand-dark rounded-xl p-4 flex items-center justify-between shadow-brutal-sm">
         <span class="font-black text-brand-dark text-lg">🥤 음료</span>
         <span class="text-xl font-black text-brand-dark text-right break-keep" id="beverageDisplay"></span>
       </div>
     </div>
+
+    <!-- 2. 동명이인 학과 선택 박스 (여러 명일 때 표시) -->
+    <div id="departmentBox" class="flex flex-col gap-2 mb-2 hidden">
+      <div id="departmentList" class="flex flex-col gap-3 max-h-56 overflow-y-auto pr-2 pb-2 custom-scrollbar">
+        <!-- JS에서 버튼 동적 생성 -->
+      </div>
+    </div>
     
-    <!-- 에러 시 닫기 버튼 (JS에서 동적 표시) -->
+    <!-- 에러 시 닫기 버튼 -->
     <button type="button" onclick="closeModal()" id="closeModalBtn" class="w-full mt-6 py-4 bg-brand-dark text-white font-black text-xl rounded-xl shadow-brutal btn-brutal flex items-center justify-center gap-2 hidden">
       다시 입력하기
     </button>
@@ -166,55 +160,128 @@ tailwind.config = {
 </div>
 
 <script>
-  async function checkAttendance() {
+  // 💡 pageId 파라미터가 있으면 '동명이인 학과 선택'으로 인한 호출, 없으면 '처음 이름 검색' 호출
+  async function checkAttendance(pageId = null) {
     const nameInput = document.getElementById('userName').value.trim();
     const submitBtn = document.getElementById('submitBtn');
     const btnText = document.getElementById('btnText');
     const btnLoader = document.getElementById('btnLoader');
 
-    if (!nameInput) {
+    if (!nameInput && !pageId) {
         alert("이름을 입력해주세요!");
         document.getElementById('userName').focus();
         return;
     }
 
-    submitBtn.disabled = true;
-    submitBtn.classList.add('loading');
-    btnText.innerText = '확인 중...';
-    btnLoader.style.display = 'block';
+    // 이름으로 처음 검색할 때 메인 버튼 로딩 처리
+    if (!pageId) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('loading');
+        btnText.innerText = '확인 중...';
+        btnLoader.style.display = 'block';
+    } else {
+        // 동명이인 팝업에서 클릭했을 때 팝업 내부에 로딩 처리
+        document.getElementById('departmentList').innerHTML = `
+          <div class="py-6 flex flex-col items-center justify-center gap-3">
+            <div class="loader" style="display:block;"></div>
+            <p class="font-bold text-brand-dark">출석 처리 중...</p>
+          </div>
+        `;
+    }
 
     try {
+        const bodyData = pageId ? { pageId: pageId } : { name: nameInput };
+        
         const response = await fetch('/api/check-attendance', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: nameInput })
+            body: JSON.stringify(bodyData)
         });
 
         const data = await response.json();
 
         if (response.ok && data.success) {
-            showModal(true, nameInput, data.team, data.beverage);
+            if (data.multiple) {
+                // 동명이인이 있는 경우 학과 선택 팝업 표시
+                showMultipleModal(nameInput, data.candidates);
+            } else {
+                // 최종적으로 1명이 식별된 경우 성공 팝업 (서버에서 받은 정확한 이름 사용)
+                showModal(true, data.name || nameInput, data.team, data.beverage);
+                document.getElementById('userName').value = ''; // 입력창 초기화
+            }
         } else {
-            showModal(false, nameInput, null, null);
+            showModal(false, nameInput, null, null, data.message);
         }
     } catch (error) {
-        // 프리뷰 창 테스트용
-        if(nameInput === '테스트') {
+        // [프리뷰 테스트용 코드] 실제 서비스에선 삭제해도 무방합니다.
+        if (nameInput === '동명이인' && !pageId) {
+            showMultipleModal(nameInput, [
+                { id: 'mock-1', department: '경영학과' },
+                { id: 'mock-2', department: '컴퓨터공학과' },
+                { id: 'mock-3', department: '시각디자인학과' }
+            ]);
+        } else if (pageId && pageId.startsWith('mock-')) {
+            showModal(true, "동명이인", "7", "카페라떼");
+            document.getElementById('userName').value = '';
+        } else if (nameInput === '테스트') {
             showModal(true, nameInput, "14", "아이스 아메리카노");
+            document.getElementById('userName').value = '';
         } else {
             showModal(false, nameInput, null, null);
         }
     } finally {
-        submitBtn.disabled = false;
-        submitBtn.classList.remove('loading');
-        btnText.innerText = '입장 확인하기!';
-        btnLoader.style.display = 'none';
-        document.getElementById('userName').value = '';
+        if (!pageId) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('loading');
+            btnText.innerText = '입장 확인하기!';
+            btnLoader.style.display = 'none';
+        }
     }
   }
 
-  function showModal(isSuccess, name, team, beverage) {
-    const modal = document.getElementById('resultModal');
+  // 모달 초기화 (잔여 클래스 제거 및 요소 숨김)
+  function resetModalState() {
+    const content = document.getElementById('modalContent');
+    content.classList.remove('shadow-[12px_12px_0_0_rgba(255,0,0,1)]', 'shadow-[12px_12px_0_0_rgba(255,107,0,1)]', 'shadow-[12px_12px_0_0_rgba(26,26,26,1)]');
+    document.getElementById('infoBox').classList.add('hidden');
+    document.getElementById('departmentBox').classList.add('hidden');
+    document.getElementById('closeModalBtn').classList.add('hidden');
+  }
+
+  // 동명이인 리스트 팝업 띄우기
+  function showMultipleModal(name, candidates) {
+    resetModalState();
+    const content = document.getElementById('modalContent');
+    const iconBox = document.getElementById('modalIconBox');
+    const icon = document.getElementById('modalIcon');
+    const title = document.getElementById('modalTitle');
+    const message = document.getElementById('modalMessage');
+    const departmentBox = document.getElementById('departmentBox');
+    const departmentList = document.getElementById('departmentList');
+
+    content.classList.add('shadow-[12px_12px_0_0_rgba(26,26,26,1)]'); // 검정색 그림자
+    iconBox.className = "w-20 h-20 bg-[#E5E7EB] border-4 border-brand-dark rounded-full flex items-center justify-center mb-6 shadow-brutal";
+    icon.className = "fa-solid fa-users text-4xl text-brand-dark";
+    
+    title.innerText = "동명이인 확인";
+    message.innerHTML = `<span class="font-black text-brand text-xl">'${name}'</span> 님이 여러 명 있습니다.<br>본인의 학과(또는 소속)를 선택해 주세요.`;
+    message.className = "text-gray-800 font-bold text-base mb-4 leading-relaxed bg-brand-light p-3 border-2 border-brand-dark rounded-lg";
+
+    departmentBox.classList.remove('hidden');
+    
+    // 학과 버튼 렌더링
+    departmentList.innerHTML = candidates.map(c => `
+        <button onclick="checkAttendance('${c.id}')" class="w-full text-left py-4 px-5 bg-white border-4 border-brand-dark text-brand-dark font-black text-lg rounded-xl shadow-brutal-sm hover:bg-brand-light hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_rgba(26,26,26,1)] transition-all">
+            👉 ${c.department}
+        </button>
+    `).join('');
+
+    openModalUI();
+  }
+
+  // 성공/실패 팝업 띄우기
+  function showModal(isSuccess, name, team, beverage, errorMsg = null) {
+    resetModalState();
     const content = document.getElementById('modalContent');
     const iconBox = document.getElementById('modalIconBox');
     const icon = document.getElementById('modalIcon');
@@ -226,8 +293,7 @@ tailwind.config = {
     const closeBtn = document.getElementById('closeModalBtn');
 
     if (isSuccess) {
-        // 성공 스타일
-        content.classList.replace('shadow-[12px_12px_0_0_rgba(255,0,0,1)]', 'shadow-[12px_12px_0_0_rgba(255,107,0,1)]');
+        content.classList.add('shadow-[12px_12px_0_0_rgba(255,107,0,1)]'); // 주황색 그림자
         iconBox.className = "w-20 h-20 bg-brand-yellow border-4 border-brand-dark rounded-full flex items-center justify-center mb-6 shadow-brutal transform -rotate-6";
         icon.className = "fa-solid fa-face-smile text-4xl text-brand-dark";
         title.innerText = `${name}님 환영합니다!`;
@@ -236,19 +302,23 @@ tailwind.config = {
         infoBox.classList.remove('hidden');
         teamDisplay.innerText = team;
         beverageDisplay.innerText = beverage || '미선택';
-        closeBtn.classList.add('hidden'); // 성공시 상단 X 버튼만 사용
     } else {
-        // 실패 스타일
-        content.classList.replace('shadow-[12px_12px_0_0_rgba(255,107,0,1)]', 'shadow-[12px_12px_0_0_rgba(255,0,0,1)]');
+        content.classList.add('shadow-[12px_12px_0_0_rgba(255,0,0,1)]'); // 빨간색 그림자
         iconBox.className = "w-20 h-20 bg-[#FF3B30] border-4 border-brand-dark rounded-full flex items-center justify-center mb-6 shadow-brutal transform rotate-6";
         icon.className = "fa-solid fa-circle-exclamation text-4xl text-white";
         title.innerText = "확인 불가";
-        message.innerHTML = `<span class="font-black text-[#FF3B30] text-xl">'${name}'</span> 님의<br>사전 신청 내역을 찾을 수 없습니다.<br><br>오타가 없는지 확인하시거나 현장 스태프에게 문의해 주세요.`;
+        message.innerHTML = `<span class="font-black text-[#FF3B30] text-xl">'${name}'</span> 님의<br>사전 신청 내역을 찾을 수 없습니다.<br><br>${errorMsg ? errorMsg : '오타가 없는지 확인하시거나 현장 스태프에게 문의해 주세요.'}`;
         message.className = "text-gray-800 font-bold text-base mb-6 leading-relaxed bg-gray-100 p-4 border-2 border-brand-dark rounded-lg";
-        infoBox.classList.add('hidden');
-        closeBtn.classList.remove('hidden'); // 에러시 하단 버튼 표시
+        closeBtn.classList.remove('hidden');
     }
 
+    openModalUI();
+  }
+
+  // 모달 애니메이션 및 표시
+  function openModalUI() {
+    const modal = document.getElementById('resultModal');
+    const content = document.getElementById('modalContent');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     setTimeout(() => {
@@ -259,6 +329,7 @@ tailwind.config = {
     }, 10);
   }
 
+  // 모달 닫기
   function closeModal() {
     const modal = document.getElementById('resultModal');
     const content = document.getElementById('modalContent');
