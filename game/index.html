@@ -174,17 +174,27 @@ function makeObstacles(){
   });
 
   // Scattered small pegs - ensure enough spacing
-  for(let y=pegZoneTop;y<pegZoneBot;y+=50+Math.random()*15){
-    const cols=5+Math.floor(Math.random()*3);
+  for(let y=pegZoneTop;y<pegZoneBot;y+=45+Math.random()*10){
+    const cols=7+Math.floor(Math.random()*3);
     for(let col=0;col<cols;col++){
-      const px=M+25+(W-M*2-50)*(col/(cols-1)) + (Math.random()-0.5)*18;
-      const py=y+(Math.random()-0.5)*12;
+      const px=M+25+(W-M*2-50)*(col/(cols-1)) + (Math.random()-0.5)*14;
+      const py=y+(Math.random()-0.5)*10;
       const pegR=3+Math.random()*1.5;
-      // Check distance from bumpers AND other pegs
       const nearBumper=bumpers.some(b=>Math.hypot(b.x-px,b.y-py)<b.r+pegR+MIN_GAP);
       const nearPeg=pegs.some(p=>Math.hypot(p.x-px,p.y-py)<p.r+pegR+MIN_GAP);
       if(!nearBumper && !nearPeg && px>M && px<W-M){
         pegs.push({x:px,y:py,r:pegR,hitAnim:0});
+      }
+    }
+  }
+
+  // Extra pass: fill vertical corridors so no ball falls straight
+  for(let x=M+30;x<W-M-30;x+=28){
+    for(let y=pegZoneTop+20;y<pegZoneBot;y+=55){
+      const nearAny=bumpers.some(b=>Math.hypot(b.x-x,b.y-y)<b.r+MIN_GAP)
+        ||pegs.some(p=>Math.hypot(p.x-x,p.y-y)<p.r+MIN_GAP+5);
+      if(!nearAny){
+        pegs.push({x:x+(Math.random()-0.5)*8,y:y+(Math.random()-0.5)*8,r:3.5,hitAnim:0});
       }
     }
   }
@@ -215,7 +225,7 @@ function makeBalls(){
       x:off+col*gapX+(Math.random()-0.5)*3,
       y:startY+row*gapY+(Math.random()-0.5)*2,
       vx:0,vy:0,r:10,color:PAL[i],idx:i,finished:false,
-      weight:SPECIAL.includes(i)?4:1,stuckTime:0
+      weight:SPECIAL.includes(i)?8:1,stuckTime:0
     });
   }
 }
