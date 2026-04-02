@@ -133,49 +133,58 @@ function applyPaste(){
 function makeObstacles(){
   bumpers=[];pegs=[];
 
-  const M=30; // margin
-  const pegZoneTop=120, pegZoneBot=H-230;
+  const M=35;
+  const BALL_R=10;
+  const MIN_GAP=BALL_R*2+6; // minimum gap between any two obstacles for ball to pass
+  const pegZoneTop=130, pegZoneBot=H-240;
 
   // Big round bumpers - scattered irregularly
   const bumperDefs=[
     // top area
-    {x:W*0.3, y:180, r:22},{x:W*0.7, y:170, r:20},{x:W*0.5, y:220, r:25},
+    {x:W*0.25,y:190,r:22},{x:W*0.55,y:175,r:20},{x:W*0.8,y:200,r:24},
     // upper mid
-    {x:W*0.15,y:290,r:18},{x:W*0.5,y:310,r:24},{x:W*0.85,y:300,r:19},
-    {x:W*0.35,y:280,r:15},{x:W*0.65,y:340,r:16},
+    {x:W*0.12,y:300,r:20},{x:W*0.42,y:310,r:22},{x:W*0.72,y:290,r:18},
     // mid
-    {x:W*0.25,y:410,r:22},{x:W*0.6,y:400,r:20},{x:W*0.8,y:430,r:23},
-    {x:W*0.45,y:460,r:17},{x:W*0.1,y:450,r:15},
+    {x:W*0.3,y:410,r:24},{x:W*0.62,y:420,r:20},{x:W*0.88,y:400,r:18},
+    {x:W*0.15,y:450,r:16},
     // lower mid
-    {x:W*0.35,y:530,r:21},{x:W*0.7,y:520,r:19},{x:W*0.15,y:560,r:16},
-    {x:W*0.55,y:570,r:24},{x:W*0.85,y:570,r:17},
+    {x:W*0.22,y:530,r:20},{x:W*0.55,y:540,r:22},{x:W*0.82,y:525,r:18},
     // lower
-    {x:W*0.3,y:630,r:18},{x:W*0.65,y:640,r:22},{x:W*0.1,y:650,r:14},
-    {x:W*0.5,y:680,r:16},{x:W*0.9,y:660,r:15},
+    {x:W*0.35,y:630,r:22},{x:W*0.7,y:645,r:20},{x:W*0.12,y:660,r:16},
+    {x:W*0.52,y:690,r:18},{x:W*0.88,y:680,r:17},
   ];
 
   bumperDefs.forEach(bd=>{
-    // Add randomness to positions
-    bumpers.push({
-      x: bd.x + (Math.random()-0.5)*30,
-      y: bd.y + (Math.random()-0.5)*20,
-      r: bd.r + (Math.random()-0.5)*6,
+    const candidate={
+      x: bd.x + (Math.random()-0.5)*20,
+      y: bd.y + (Math.random()-0.5)*15,
+      r: bd.r,
       hitAnim:0,
       color: ['#ff0066','#00ffcc','#ffcc00','#7b2fff','#0088ff','#ff9933'][Math.floor(Math.random()*6)]
-    });
+    };
+    // Ensure not too close to existing bumpers
+    const tooClose=bumpers.some(b=>Math.hypot(b.x-candidate.x,b.y-candidate.y)<b.r+candidate.r+MIN_GAP);
+    if(!tooClose){
+      bumpers.push(candidate);
+    } else {
+      // Place without random offset
+      candidate.x=bd.x; candidate.y=bd.y;
+      bumpers.push(candidate);
+    }
   });
 
-  // Scattered small pegs - lots of them, irregular grid
-  for(let y=pegZoneTop;y<pegZoneBot;y+=38+Math.random()*15){
-    const cols=6+Math.floor(Math.random()*4);
-    const offsetRow=(Math.random()-0.5)*20;
+  // Scattered small pegs - ensure enough spacing
+  for(let y=pegZoneTop;y<pegZoneBot;y+=50+Math.random()*15){
+    const cols=5+Math.floor(Math.random()*3);
     for(let col=0;col<cols;col++){
-      const px=M+20+(W-M*2-40)*(col/(cols-1)) + (Math.random()-0.5)*22 + offsetRow;
-      const py=y+(Math.random()-0.5)*15;
-      // Skip if too close to a bumper
-      const nearBumper=bumpers.some(b=>Math.hypot(b.x-px,b.y-py)<b.r+12);
-      if(!nearBumper && px>M && px<W-M){
-        pegs.push({x:px,y:py,r:3+Math.random()*1.5,hitAnim:0});
+      const px=M+25+(W-M*2-50)*(col/(cols-1)) + (Math.random()-0.5)*18;
+      const py=y+(Math.random()-0.5)*12;
+      const pegR=3+Math.random()*1.5;
+      // Check distance from bumpers AND other pegs
+      const nearBumper=bumpers.some(b=>Math.hypot(b.x-px,b.y-py)<b.r+pegR+MIN_GAP);
+      const nearPeg=pegs.some(p=>Math.hypot(p.x-px,p.y-py)<p.r+pegR+MIN_GAP);
+      if(!nearBumper && !nearPeg && px>M && px<W-M){
+        pegs.push({x:px,y:py,r:pegR,hitAnim:0});
       }
     }
   }
@@ -206,7 +215,7 @@ function makeBalls(){
       x:off+col*gapX+(Math.random()-0.5)*3,
       y:startY+row*gapY+(Math.random()-0.5)*2,
       vx:0,vy:0,r:10,color:PAL[i],idx:i,finished:false,
-      weight:SPECIAL.includes(i)?4:1
+      weight:SPECIAL.includes(i)?4:1,stuckTime:0
     });
   }
 }
@@ -304,6 +313,16 @@ function updateBalls(){
     // Speed cap
     const spd=Math.hypot(b.vx,b.vy);
     if(spd>2.8){b.vx*=2.8/spd;b.vy*=2.8/spd;}
+
+    // Anti-stuck: nudge ball if barely moving
+    if(spd<0.15&&b.y<H-250){
+      b.stuckTime=(b.stuckTime||0)+1;
+      if(b.stuckTime>60){
+        b.vx+=(Math.random()-0.5)*2;
+        b.vy+=0.5;
+        b.stuckTime=0;
+      }
+    } else { b.stuckTime=0; }
 
     // Finish - FIRST ONE WINS immediately
     if(b.y+b.r>=FINISH_Y&&Math.abs(b.x-W/2)<30&&!raceFinished){
