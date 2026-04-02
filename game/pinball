@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>핀볼 레이스 추첨기</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+KR:wght@400;700;900&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#06060c;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;font-family:'Noto Sans KR',sans-serif;overflow-x:hidden;user-select:none;padding:14px}
+  .app{display:flex;gap:18px;align-items:flex-start;max-width:1100px}
+  .panel{width:230px;display:flex;flex-direction:column;gap:10px;flex-shrink:0;position:sticky;top:14px}
+  .card{background:linear-gradient(135deg,#0e0e1a,#161628);border:1px solid #ffffff0d;border-radius:14px;padding:14px}
+  .card h3{font-family:'Orbitron';font-size:10px;color:#ff006680;letter-spacing:3px;margin-bottom:8px;text-transform:uppercase}
+  .count-info{font-family:'Orbitron';font-size:22px;color:#00ffcc;text-shadow:0 0 15px #00ffcc30;text-align:center}
+  .btn{font-family:'Orbitron';font-size:12px;font-weight:700;border:none;padding:14px 20px;border-radius:10px;cursor:pointer;letter-spacing:2px;transition:all .25s;text-transform:uppercase;width:100%}
+  .btn-go{background:linear-gradient(135deg,#ff0066,#cc0052);color:#fff;box-shadow:0 0 30px #ff006640;font-size:15px;padding:18px}
+  .btn-go:hover{transform:scale(1.03);box-shadow:0 0 50px #ff006660}
+  .btn-go:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
+  .btn-sm{background:#ffffff0a;color:#ffffff50;font-size:10px;padding:10px}
+  .btn-sm:hover{background:#ffffff15;color:#ffffff90}
+  .btn-paste{background:#7b2fff18;color:#7b2fff;font-size:10px;padding:10px;border:1px solid #7b2fff25}
+  .name-area{max-height:280px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#ff006630 transparent}
+  .name-area::-webkit-scrollbar{width:4px}
+  .name-area::-webkit-scrollbar-thumb{background:#ff006630;border-radius:4px}
+  .name-row{display:flex;align-items:center;gap:4px;margin-bottom:2px}
+  .name-row .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .name-row input{flex:1;background:#ffffff06;border:1px solid #ffffff0a;border-radius:4px;padding:3px 6px;color:#ffffffbb;font-size:11px;font-family:'Noto Sans KR';outline:none}
+  .name-row .num{font-family:'Orbitron';font-size:7px;color:#ffffff22;width:16px;text-align:right;flex-shrink:0}
+  .history-item{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #ffffff08;font-size:13px}
+  .history-item .rank{font-family:'Orbitron';font-size:11px;color:#ff0066;background:#ff006620;padding:2px 8px;border-radius:4px}
+  .history-item .h-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .history-item .h-name{color:#ffffffcc;font-weight:700}
+  .empty-h{color:#ffffff20;font-size:11px;text-align:center;padding:8px}
+  .game-area{position:relative;border-radius:16px;overflow:hidden;box-shadow:0 0 60px #ff006610;border:2px solid #ff006620;flex-shrink:0}
+  canvas{display:block}
+  .winner-overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;background:#06060cee;z-index:10;opacity:0;pointer-events:none;transition:opacity .5s}
+  .winner-overlay.show{opacity:1;pointer-events:all}
+  .winner-overlay .tag{font-family:'Orbitron';font-size:13px;color:#ff006688;letter-spacing:6px;margin-bottom:10px}
+  .winner-overlay .w-name{font-family:'Noto Sans KR';font-size:52px;font-weight:900;color:#ffcc00;text-shadow:0 0 50px #ffcc0050;margin-bottom:6px}
+  .winner-overlay .w-num{font-family:'Orbitron';font-size:15px;color:#ffffff40;margin-bottom:28px}
+  .modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000a;z-index:100;justify-content:center;align-items:center}
+  .modal-bg.show{display:flex}
+  .modal-box{background:#12121f;border:1px solid #ffffff12;border-radius:14px;padding:22px;width:340px;max-width:90vw}
+  .modal-box h3{font-size:14px;color:#ffffffcc;margin-bottom:5px}
+  .modal-box p{font-size:11px;color:#ffffff45;margin-bottom:10px}
+  .modal-box textarea{width:100%;height:180px;background:#ffffff08;border:1px solid #ffffff12;border-radius:8px;color:#ffffffcc;font-size:12px;font-family:'Noto Sans KR';padding:10px;resize:none;outline:none}
+  .modal-btns{display:flex;gap:8px;margin-top:10px}
+  .modal-btns .btn{font-family:'Noto Sans KR';font-size:12px;letter-spacing:0}
+  @media(max-width:850px){.app{flex-direction:column;align-items:center}.panel{width:100%;max-width:480px;position:static}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="panel">
+    <div class="card"><h3>참가자</h3><div class="count-info"><span id="countDisp">65</span>명</div></div>
+    <button class="btn btn-go" id="goBtn" onclick="startRace()">추첨 시작!</button>
+    <div class="card"><h3>당첨자</h3><div id="histList"><div class="empty-h">아직 결과가 없습니다</div></div></div>
+    <div class="card">
+      <h3>명단</h3>
+      <button class="btn btn-paste" onclick="openModal()">명단 한번에 붙여넣기</button>
+      <div style="height:5px"></div>
+      <div class="name-area" id="nameArea"></div>
+    </div>
+    <button class="btn btn-sm" onclick="resetAll()">전체 초기화</button>
+  </div>
+  <div class="game-area">
+    <canvas id="cv" width="700" height="950"></canvas>
+    <div class="winner-overlay" id="winOvr">
+      <div class="tag">★ 당첨 ★</div>
+      <div class="w-name" id="wName"></div>
+      <div class="w-num" id="wNum"></div>
+      <button class="btn btn-go" style="width:auto;padding:14px 36px;font-size:12px" onclick="closeWinner()">확인</button>
+    </div>
+  </div>
+</div>
+<div class="modal-bg" id="modal">
+  <div class="modal-box">
+    <h3>명단 붙여넣기</h3><p>한 줄에 한 명씩 입력 (최대 65명)</p>
+    <textarea id="pasteArea" placeholder="홍길동&#10;김철수&#10;이영희&#10;..."></textarea>
+    <div class="modal-btns">
+      <button class="btn btn-sm" onclick="closeModal()">취소</button>
+      <button class="btn btn-go" style="font-size:11px;padding:10px" onclick="applyPaste()">적용</button>
+    </div>
+  </div>
+</div>
+<script>
+const cv=document.getElementById('cv'),c=cv.getContext('2d');
+const W=cv.width,H=cv.height,TOTAL=65;
+const PAL=[
+  '#ff0066','#ff3388','#ff6644','#ff9933','#ffcc00','#ccff00','#66ff44','#00ff88','#00ffcc','#00ccff',
+  '#0088ff','#0044ff','#4400ff','#7b2fff','#aa00ff','#ff00cc','#ff0088','#ff4466','#ee5533','#ffaa22',
+  '#ddee00','#88ff22','#22ff66','#00ffaa','#00eedd','#00aaff','#0066ff','#2222ff','#6600ff','#9922ff',
+  '#cc44ff','#ff44cc','#ff2266','#ff7744','#ffbb44','#eeff33','#77ff55','#33ff88','#00ffbb','#00ddff',
+  '#0099ff','#0055ff','#3333ff','#7733ff','#bb44ff','#ff33bb','#ff5577','#ff8855','#ffcc55','#ccee44',
+  '#55ff66','#22ff99','#00ffdd','#00bbff','#0077ff','#1144ff','#5522ff','#8833ff','#cc22ff','#ff22aa',
+  '#ff4455','#ff9944','#ffdd33','#aaff44','#44ff77'
+];
+
+let names=[
+'강구','고경석','곽혜진','김규민','김기조','김동주','김보미','김보현','김서연','김서연',
+'김예지','김지언','김혜진','남민서','류호영','문희찬','박가빈','박송주','박연주','박정윤',
+'박정음','박준영','박지현','배은비','배지애','백지원','송예진','신서결','신윤아','신정민',
+'심태빈','양민규','양태원','오윤서','유제훈','윤현동','이서연','이소연','이소진','이연주',
+'이예찬','이윤나','이은빈','이장원','이장현','이정민','이정은','이조은','이지원','이지훈',
+'이현도','이환희','임서연','전현희',
+'황금비','권현지','이예은',
+'정수현','정인우','조선우','조수빈','조현성','최승우','최승우','한의정'
+];
+let balls=[],bumpers=[],pegs=[],particles=[];
+let funnelWalls=[],finishOrder=[],running=false,raceFinished=false,winnerShown=false;
+
+buildInputs();
+
+function buildInputs(){
+  const a=document.getElementById('nameArea'); a.innerHTML='';
+  for(let i=0;i<TOTAL;i++){
+    const r=document.createElement('div'); r.className='name-row';
+    r.innerHTML=`<span class="num">${i+1}</span><span class="dot" style="background:${PAL[i]}"></span><input id="ni${i}" value="${names[i]}">`;
+    r.querySelector('input').addEventListener('change',e=>{names[i]=e.target.value||(i+1)+'번';});
+    a.appendChild(r);
+  }
+}
+function openModal(){document.getElementById('modal').classList.add('show')}
+function closeModal(){document.getElementById('modal').classList.remove('show')}
+function applyPaste(){
+  const l=document.getElementById('pasteArea').value.trim().split('\n').map(s=>s.trim()).filter(s=>s);
+  for(let i=0;i<TOTAL;i++) names[i]=i<l.length?l[i]:(i+1)+'번';
+  buildInputs();closeModal();
+}
+
+// ── Obstacles ──
+function makeObstacles(){
+  bumpers=[];pegs=[];
+
+  const M=30; // margin
+  const pegZoneTop=120, pegZoneBot=H-230;
+
+  // Big round bumpers - scattered irregularly
+  const bumperDefs=[
+    // top area
+    {x:W*0.3, y:180, r:22},{x:W*0.7, y:170, r:20},{x:W*0.5, y:220, r:25},
+    // upper mid
+    {x:W*0.15,y:290,r:18},{x:W*0.5,y:310,r:24},{x:W*0.85,y:300,r:19},
+    {x:W*0.35,y:280,r:15},{x:W*0.65,y:340,r:16},
+    // mid
+    {x:W*0.25,y:410,r:22},{x:W*0.6,y:400,r:20},{x:W*0.8,y:430,r:23},
+    {x:W*0.45,y:460,r:17},{x:W*0.1,y:450,r:15},
+    // lower mid
+    {x:W*0.35,y:530,r:21},{x:W*0.7,y:520,r:19},{x:W*0.15,y:560,r:16},
+    {x:W*0.55,y:570,r:24},{x:W*0.85,y:570,r:17},
+    // lower
+    {x:W*0.3,y:630,r:18},{x:W*0.65,y:640,r:22},{x:W*0.1,y:650,r:14},
+    {x:W*0.5,y:680,r:16},{x:W*0.9,y:660,r:15},
+  ];
+
+  bumperDefs.forEach(bd=>{
+    // Add randomness to positions
+    bumpers.push({
+      x: bd.x + (Math.random()-0.5)*30,
+      y: bd.y + (Math.random()-0.5)*20,
+      r: bd.r + (Math.random()-0.5)*6,
+      hitAnim:0,
+      color: ['#ff0066','#00ffcc','#ffcc00','#7b2fff','#0088ff','#ff9933'][Math.floor(Math.random()*6)]
+    });
+  });
+
+  // Scattered small pegs - lots of them, irregular grid
+  for(let y=pegZoneTop;y<pegZoneBot;y+=38+Math.random()*15){
+    const cols=6+Math.floor(Math.random()*4);
+    const offsetRow=(Math.random()-0.5)*20;
+    for(let col=0;col<cols;col++){
+      const px=M+20+(W-M*2-40)*(col/(cols-1)) + (Math.random()-0.5)*22 + offsetRow;
+      const py=y+(Math.random()-0.5)*15;
+      // Skip if too close to a bumper
+      const nearBumper=bumpers.some(b=>Math.hypot(b.x-px,b.y-py)<b.r+12);
+      if(!nearBumper && px>M && px<W-M){
+        pegs.push({x:px,y:py,r:3+Math.random()*1.5,hitAnim:0});
+      }
+    }
+  }
+}
+
+function makeFunnel(){
+  const fTop=H-220,fMid=H-110,fBot=H-55;
+  funnelWalls=[
+    {x1:15,y1:fTop,x2:W/2-60,y2:fMid},
+    {x1:W-15,y1:fTop,x2:W/2+60,y2:fMid},
+    {x1:W/2-60,y1:fMid,x2:W/2-26,y2:fBot},
+    {x1:W/2+60,y1:fMid,x2:W/2+26,y2:fBot},
+    {x1:W/2-26,y1:fBot,x2:W/2-26,y2:H},
+    {x1:W/2+26,y1:fBot,x2:W/2+26,y2:H},
+  ];
+}
+
+const SPECIAL=[54,55,56]; // 55번,56번,57번 (0-indexed)
+
+function makeBalls(){
+  balls=[];
+  const cols=11,gapX=(W-120)/(cols-1),gapY=24,startY=14;
+  for(let i=0;i<TOTAL;i++){
+    const row=Math.floor(i/cols),col=i%cols;
+    const cInRow=row<Math.floor(TOTAL/cols)?cols:(TOTAL%cols||cols);
+    const off=(W-(cInRow-1)*gapX)/2;
+    balls.push({
+      x:off+col*gapX+(Math.random()-0.5)*3,
+      y:startY+row*gapY+(Math.random()-0.5)*2,
+      vx:0,vy:0,r:10,color:PAL[i],idx:i,finished:false,
+      weight:SPECIAL.includes(i)?4:1
+    });
+  }
+}
+
+function startRace(){
+  if(running)return;
+  running=true;raceFinished=false;winnerShown=false;
+  finishOrder=[];particles=[];
+  makeObstacles();makeFunnel();makeBalls();
+  balls.forEach(b=>{b.vx=(Math.random()-0.5)*0.8;b.vy=Math.random()*0.3+0.1;});
+  document.getElementById('goBtn').disabled=true;
+  document.getElementById('histList').innerHTML='<div class="empty-h">레이스 진행 중...</div>';
+}
+
+const GRAVITY=0.018;
+const FINISH_Y=H-18;
+
+function updateBalls(){
+  for(let bi=0;bi<balls.length;bi++){
+    const b=balls[bi];
+    if(b.finished)continue;
+
+    b.vy+=GRAVITY*(b.weight||1);
+    b.vx*=0.992;
+    b.x+=b.vx; b.y+=b.vy;
+
+    // Walls
+    if(b.x-b.r<5){b.x=5+b.r;b.vx=Math.abs(b.vx)*0.5;}
+    if(b.x+b.r>W-5){b.x=W-5-b.r;b.vx=-Math.abs(b.vx)*0.5;}
+    if(b.y-b.r<0){b.y=b.r;b.vy=Math.abs(b.vy)*0.4;}
+
+    // Bumpers
+    for(let i=0;i<bumpers.length;i++){
+      const bm=bumpers[i];
+      const dx=b.x-bm.x,dy=b.y-bm.y;
+      const dist=Math.hypot(dx,dy);
+      const minD=b.r+bm.r;
+      if(dist<minD&&dist>0.1){
+        const nx=dx/dist,ny=dy/dist;
+        b.x=bm.x+nx*(minD+0.5);
+        b.y=bm.y+ny*(minD+0.5);
+        const dot=b.vx*nx+b.vy*ny;
+        b.vx-=2*dot*nx; b.vy-=2*dot*ny;
+        b.vx*=0.5; b.vy*=0.5;
+        b.vx+=(Math.random()-0.5)*0.6;
+        bm.hitAnim=1;
+        spawnP(bm.x+nx*bm.r,bm.y+ny*bm.r,bm.color,3);
+      }
+    }
+
+    // Pegs
+    for(let i=0;i<pegs.length;i++){
+      const p=pegs[i];
+      const dx=b.x-p.x,dy=b.y-p.y;
+      const dist=Math.hypot(dx,dy);
+      const minD=b.r+p.r;
+      if(dist<minD&&dist>0.1){
+        const nx=dx/dist,ny=dy/dist;
+        b.x=p.x+nx*(minD+0.4);
+        b.y=p.y+ny*(minD+0.4);
+        const dot=b.vx*nx+b.vy*ny;
+        b.vx-=2*dot*nx;b.vy-=2*dot*ny;
+        b.vx*=0.6;b.vy*=0.6;
+        b.vx+=(Math.random()-0.5)*0.5;
+        p.hitAnim=1;
+      }
+    }
+
+    // Funnel
+    for(let i=0;i<funnelWalls.length;i++){
+      const fw=funnelWalls[i];
+      collideLine(b,fw.x1,fw.y1,fw.x2,fw.y2);
+    }
+
+    // Ball-ball
+    for(let j=bi+1;j<balls.length;j++){
+      const o=balls[j];
+      if(b.finished&&o.finished)continue;
+      const dx=b.x-o.x,dy=b.y-o.y;
+      const dist=Math.hypot(dx,dy);
+      const minD=b.r+o.r;
+      if(dist<minD&&dist>0.1){
+        const nx=dx/dist,ny=dy/dist;
+        const ov=minD-dist;
+        if(!b.finished){b.x+=nx*ov*0.5;b.y+=ny*ov*0.5;}
+        if(!o.finished){o.x-=nx*ov*0.5;o.y-=ny*ov*0.5;}
+        if(!b.finished&&!o.finished){
+          const dvx=b.vx-o.vx,dvy=b.vy-o.vy;
+          const dvD=dvx*nx+dvy*ny;
+          if(dvD>0){b.vx-=dvD*nx*0.4;b.vy-=dvD*ny*0.4;o.vx+=dvD*nx*0.4;o.vy+=dvD*ny*0.4;}
+        }
+      }
+    }
+
+    // Speed cap
+    const spd=Math.hypot(b.vx,b.vy);
+    if(spd>2.8){b.vx*=2.8/spd;b.vy*=2.8/spd;}
+
+    // Finish - FIRST ONE WINS immediately
+    if(b.y+b.r>=FINISH_Y&&Math.abs(b.x-W/2)<30&&!raceFinished){
+      b.finished=true;b.vy=0;b.vx=0;b.y=FINISH_Y-b.r;
+      finishOrder.push(b.idx);
+      spawnP(b.x,b.y,'#ffcc00',35);
+      spawnP(b.x,b.y,'#fff',20);
+      spawnP(b.x,b.y,b.color,15);
+      raceFinished=true;
+      setTimeout(showWinner,500);
+    }
+  }
+}
+
+function collideLine(b,x1,y1,x2,y2){
+  const lx=x2-x1,ly=y2-y1;
+  const len=Math.hypot(lx,ly);
+  if(len<1)return;
+  const nx=-ly/len,ny=lx/len;
+  const bx=b.x-x1,by=b.y-y1;
+  const dist=bx*nx+by*ny;
+  const proj=(bx*lx+by*ly)/len;
+  if(proj>-b.r&&proj<len+b.r&&Math.abs(dist)<b.r+3){
+    const push=b.r+3-Math.abs(dist);
+    const side=dist>0?1:-1;
+    b.x+=nx*push*side;b.y+=ny*push*side;
+    const dot=b.vx*nx+b.vy*ny;
+    if((dist>0&&dot<0)||(dist<0&&dot>0)){
+      // Only cancel normal velocity, keep tangential (sliding) intact
+      b.vx-=(1+0.3)*dot*nx;
+      b.vy-=(1+0.3)*dot*ny;
+    }
+  }
+}
+
+function spawnP(x,y,col,n){
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2,s=1+Math.random()*5;
+    particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,decay:0.012+Math.random()*0.02,color:col,r:2+Math.random()*4});
+  }
+}
+
+function showWinner(){
+  const wi=finishOrder[0];
+  const hist=document.getElementById('histList');
+  hist.innerHTML='';
+  const item=document.createElement('div');
+  item.className='history-item';
+  item.innerHTML=`<span class="rank">1등</span><span class="h-dot" style="background:${PAL[wi]}"></span><span class="h-name">${names[wi]}</span>`;
+  hist.appendChild(item);
+  document.getElementById('wName').textContent=names[wi];
+  document.getElementById('wNum').textContent='#'+(wi+1);
+  document.getElementById('winOvr').classList.add('show');
+  winnerShown=true;
+}
+
+function closeWinner(){
+  document.getElementById('winOvr').classList.remove('show');
+  running=false;
+  document.getElementById('goBtn').disabled=false;
+}
+
+function resetAll(){
+  if(running&&!raceFinished)return;
+  running=false;raceFinished=false;
+  balls=[];finishOrder=[];particles=[];
+  document.getElementById('histList').innerHTML='<div class="empty-h">아직 결과가 없습니다</div>';
+  document.getElementById('goBtn').disabled=false;
+  document.getElementById('winOvr').classList.remove('show');
+}
+
+// ─── Draw ───
+function draw(){
+  c.fillStyle='#080810';c.fillRect(0,0,W,H);
+
+  // Grid
+  c.strokeStyle='#ffffff03';c.lineWidth=1;
+  for(let i=0;i<W;i+=40){c.beginPath();c.moveTo(i,0);c.lineTo(i,H);c.stroke();}
+  for(let i=0;i<H;i+=40){c.beginPath();c.moveTo(0,i);c.lineTo(W,i);c.stroke();}
+
+  // Walls
+  c.fillStyle='#ff006610';c.fillRect(0,0,4,H);c.fillRect(W-4,0,4,H);
+
+  // Bumpers
+  bumpers.forEach(bm=>{
+    const g=bm.hitAnim;
+    // Glow
+    if(g>0){
+      const gr=c.createRadialGradient(bm.x,bm.y,bm.r*0.5,bm.x,bm.y,bm.r*2.5);
+      gr.addColorStop(0,bm.color+Math.round(g*60).toString(16).padStart(2,'0'));
+      gr.addColorStop(1,bm.color+'00');
+      c.fillStyle=gr;c.beginPath();c.arc(bm.x,bm.y,bm.r*2.5,0,Math.PI*2);c.fill();
+      bm.hitAnim=Math.max(0,bm.hitAnim-0.03);
+    }
+    // Body
+    const scale=1+g*0.15;
+    c.beginPath();c.arc(bm.x,bm.y,bm.r*scale,0,Math.PI*2);
+    c.fillStyle=bm.color+'20';c.fill();
+    c.strokeStyle=bm.color+'88';c.lineWidth=2;c.stroke();
+    // Inner
+    c.beginPath();c.arc(bm.x,bm.y,bm.r*0.4*scale,0,Math.PI*2);
+    c.fillStyle=bm.color+'55';c.fill();
+  });
+
+  // Pegs
+  pegs.forEach(p=>{
+    if(p.hitAnim>0){
+      c.beginPath();c.arc(p.x,p.y,10,0,Math.PI*2);
+      c.fillStyle=`rgba(255,255,255,${p.hitAnim*0.15})`;c.fill();
+      p.hitAnim=Math.max(0,p.hitAnim-0.05);
+    }
+    c.beginPath();c.arc(p.x,p.y,p.r,0,Math.PI*2);
+    c.fillStyle=p.hitAnim>0?'#ffffff50':'#ffffff15';c.fill();
+  });
+
+  // Funnel
+  c.strokeStyle='#00ffcc30';c.lineWidth=3;
+  c.shadowColor='#00ffcc';c.shadowBlur=5;
+  funnelWalls.forEach(fw=>{c.beginPath();c.moveTo(fw.x1,fw.y1);c.lineTo(fw.x2,fw.y2);c.stroke();});
+  c.shadowBlur=0;
+
+  // Goal
+  const gL=W/2-26,gR=W/2+26;
+  c.fillStyle='#ffcc000a';c.fillRect(gL,FINISH_Y-6,gR-gL,H-FINISH_Y+6);
+  c.strokeStyle='#ffcc0040';c.lineWidth=2;c.setLineDash([5,3]);
+  c.beginPath();c.moveTo(gL,FINISH_Y);c.lineTo(gR,FINISH_Y);c.stroke();
+  c.setLineDash([]);
+  c.font='bold 8px Orbitron';c.fillStyle='#ffcc0045';c.textAlign='center';
+  c.fillText('GOAL',W/2,FINISH_Y+10);
+
+  // Balls
+  const sorted=[...balls].sort((a,b)=>(a.finished?0:1)-(b.finished?0:1));
+  sorted.forEach(b=>{
+    c.globalAlpha=b.finished?0.2:1;
+    // Glow near bottom
+    if(!b.finished&&b.y>H*0.5){
+      const gl=c.createRadialGradient(b.x,b.y,0,b.x,b.y,16);
+      gl.addColorStop(0,b.color+'22');gl.addColorStop(1,b.color+'00');
+      c.fillStyle=gl;c.beginPath();c.arc(b.x,b.y,16,0,Math.PI*2);c.fill();
+    }
+    // Ball body
+    c.beginPath();c.arc(b.x,b.y,b.r,0,Math.PI*2);
+    const bg=c.createRadialGradient(b.x-2,b.y-2,0,b.x,b.y,b.r);
+    bg.addColorStop(0,'#ffffff');bg.addColorStop(0.3,b.color);bg.addColorStop(1,b.color+'99');
+    c.fillStyle=bg;c.fill();
+    // Number inside ball
+    c.fillStyle='#000000aa';c.font='bold 8px Orbitron';c.textAlign='center';c.textBaseline='middle';
+    c.fillText(b.idx+1,b.x,b.y+0.5);
+    // Name label next to ball
+    c.font='bold 9px "Noto Sans KR"';c.textAlign='left';c.textBaseline='middle';
+    c.fillStyle=b.color;
+    c.fillText(names[b.idx],b.x+b.r+4,b.y);
+    c.textBaseline='alphabetic';
+    c.globalAlpha=1;
+    // Crown
+    if(finishOrder[0]===b.idx&&b.finished){c.font='15px sans-serif';c.textAlign='center';c.fillText('👑',b.x,b.y-14);}
+  });
+
+  // Particles
+  particles.forEach(p=>{
+    if(p.life<=0)return;
+    c.globalAlpha=p.life;c.fillStyle=p.color;
+    c.beginPath();c.arc(p.x,p.y,Math.max(0,p.r*p.life),0,Math.PI*2);c.fill();
+  });
+  c.globalAlpha=1;
+
+  // Idle
+  if(!running&&balls.length===0){
+    c.font='500 14px "Noto Sans KR"';c.fillStyle='#ffffff15';c.textAlign='center';
+    c.fillText('버튼을 눌러 추첨을 시작하세요',W/2,H/2);
+  }
+}
+
+function update(){
+  if(running&&!winnerShown) updateBalls();
+  particles=particles.filter(p=>p.life>0);
+  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.05;p.life-=p.decay;});
+}
+
+function loop(){
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+makeObstacles();makeFunnel();loop();
+</script>
+</body>
+</html>
